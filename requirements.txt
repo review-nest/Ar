@@ -1,0 +1,8 @@
+gunicorn
+Flask
+google-play-scraper
+requests
+pillow
+moviepy
+pandas
+openpyxl

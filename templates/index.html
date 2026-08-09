@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Store Review Fetcher</title>
+    
+    <!-- Clean Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome for Professional Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- PDF Export Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-family: 'Plus Jakarta Sans', 'Roboto', sans-serif;
+            padding: 30px 15px;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 680px;
+        }
+
+        .form-card {
+            background: #ffffff;
+            padding: 28px 26px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 24px;
+        }
+
+        .form-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 22px;
+            letter-spacing: -0.2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        .form-label {
+            font-size: 12.5px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .form-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background-color: #f8fafc;
+            font-family: inherit;
+            font-size: 13px;
+            color: #1e293b;
+            transition: all 0.2s ease;
+        }
+
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            background-color: #ffffff;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .form-textarea {
+            height: 64px;
+            resize: none;
+        }
+
+        .fetch-btn-pill {
+            grid-column: span 2;
+            padding: 12px 24px;
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 25px;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 6px;
+        }
+
+        .fetch-btn-pill:hover {
+            background: #1d4ed8;
+        }
+
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(6px);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .aesthetic-spinner {
+            width: 42px;
+            height: 42px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .action-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Premium Compact Action Buttons */
+        .premium-btn {
+            padding: 6px 14px;
+            font-size: 11.5px;
+            font-weight: 500;
+            border-radius: 16px;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .pdf-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .pdf-btn:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-1px);
+        }
+
+        .play-modal-card {
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid #dadce0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .app-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .modal-app-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #202124;
+            line-height: 1.25;
+        }
+
+        .modal-app-sub {
+            font-size: 12px;
+            color: #5f6368;
+            margin-top: 1px;
+            font-weight: 400;
+        }
+
+        .modal-close-icon {
+            font-size: 18px;
+            color: #5f6368;
+            cursor: pointer;
+        }
+
+        .reviews-list {
+            padding: 8px 20px 20px 20px;
+        }
+
+        .ps-review-item {
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .ps-review-item:last-child {
+            border-bottom: none;
+        }
+
+        .ps-user-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ps-user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: #ffffff;
+            font-size: 12.5px;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+
+        .avatar-img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .ps-username {
+            font-size: 13px;
+            font-weight: 400;
+            color: #202124;
+        }
+
+        .ps-three-dots {
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        .ps-rating-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .ps-stars {
+            color: #01875f;
+            font-size: 10.5px;
+            letter-spacing: 0.5px;
+        }
+
+        .ps-date {
+            font-size: 11px;
+            color: #5f6368;
+            font-weight: 400;
+        }
+
+        .ps-comment {
+            font-size: 12.5px;
+            color: #3c4043;
+            margin: 6px 0 10px 0;
+            line-height: 1.5;
+            font-weight: 400;
+            word-break: break-word;
+        }
+
+        .ps-helpful-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ps-helpful-text {
+            font-size: 11.5px;
+            color: #5f6368;
+            font-weight: 400;
+        }
+
+        .ps-action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .ps-pill-btn {
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 16px;
+            padding: 3px 15px;
+            font-size: 11px;
+            color: #3c4043;
+            cursor: pointer;
+            font-weight: 400;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full-width, .fetch-btn-pill { grid-column: span 1; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading-overlay">
+        <div class="aesthetic-spinner"></div>
+        <div class="loading-text" id="loading-text-label">Fetching Reviews...</div>
+    </div>
+
+    <div class="main-wrapper">
+
+        <div class="form-card">
+            <div class="form-title">Play Store Reviews Fetcher</div>
+            
+            <form method="POST" id="review-form">
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label class="form-label">Application Package ID / URL</label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            name="package" 
+                            placeholder="e.g., com.example or https://play.google.com/store/apps/details?id=..." 
+                            value="{{ package if package else '' }}" 
+                            required>
+                        <span class="form-hint">Enter the Package ID or paste the complete Play Store link.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Review Date</label>
+                        <input 
+                            type="date" 
+                            class="form-input" 
+                            name="date" 
+                            value="{{ request.form.get('date', '') }}" 
+                            required>
+                        <span class="form-hint">Select the target review publication date.</span>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label">Filter Rating</label>
+                        <select class="form-select" name="rating">
+                            <option value="" {% if not request.form.get('rating') %}selected{% endif %}>All Ratings</option>
+                            <option value="5" {% if request.form.get('rating') == '5' %}selected{% endif %}>★ ★ ★ ★ ★ (5 Stars)</option>
+                            <option value="4" {% if request.form.get('rating') == '4' %}selected{% endif %}>★ ★ ★ ★ ☆ (4 Stars)</option>
+                            <option value="3" {% if request.form.get('rating') == '3' %}selected{% endif %}>★ ★ ★ ☆ ☆ (3 Stars)</option>
+                            <option value="2" {% if request.form.get('rating') == '2' %}selected{% endif %}>★ ★ ☆ ☆ ☆ (2 Stars)</option>
+                            <option value="1" {% if request.form.get('rating') == '1' %}selected{% endif %}>★ ☆ ☆ ☆ ☆ (1 Star)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label">Search Keywords</label>
+                        <textarea 
+                            class="form-textarea" 
+                            name="keyword" 
+                            placeholder="Enter keywords (e.g. refund, update, crash) - 1 per line">{{ request.form.get('keyword', '') }}</textarea>
+                        <span class="form-hint">Filter reviews containing specific terms. Add one keyword per line.</span>
+                    </div>
+
+                    <button type="submit" class="fetch-btn-pill">Fetch Reviews</button>
+
+                </div>
+            </form>
+        </div>
+
+        {% if reviews is not none and reviews|length > 0 %}
+
+            <div class="action-toolbar">
+                <span style="font-size: 12.5px; color: #475569;">Total Reviews: <strong>{{ reviews|length }}</strong></span>
+                
+                <div class="btn-group">
+                    <button class="premium-btn pdf-btn" onclick="exportToPDF()"><i class="fa-solid fa-file-pdf"></i> Save PDF</button>
+                </div>
+            </div>
+
+            <div class="play-modal-card" id="export-target">
+                
+                <div class="modal-header">
+                    <div class="modal-header-left">
+                        {% if app_info and app_info.icon %}
+                            <img src="{{ app_info.icon }}" class="app-logo" alt="App Icon">
+                        {% endif %}
+                        <div>
+                            <div class="modal-app-title">{{ app_info.title if app_info and app_info.title else package }}</div>
+                            <div class="modal-app-sub">Ratings and reviews</div>
+                        </div>
+                    </div>
+                    <div class="modal-close-icon">✕</div>
+                </div>
+
+                <div class="reviews-list">
+                    {% set colors = ['#689f38', '#2e7d32', '#1565c0', '#ad1457', '#6a1b9a', '#ef6c00'] %}
+                    {% for r in reviews %}
+                        <div class="ps-review-item">
+                            <div class="ps-user-header">
+                                <div class="ps-user-info">
+                                    {% if r.userImage %}
+                                        <img src="{{ r.userImage }}" class="avatar-img" alt="User Avatar" referrerpolicy="no-referrer">
+                                    {% else %}
+                                        <div class="avatar-circle" style="background-color: {{ colors[loop.index0 % 6] }};">
+                                            {{ r.userName[0] if r.userName else 'A' }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="ps-username">{{ r.userName if r.userName else 'A Google User' }}</div>
+                                </div>
+                                <div class="ps-three-dots">⋮</div>
+                            </div>
+
+                            <div class="ps-rating-row">
+                                <div class="ps-stars">
+                                    {% for i in range(r.score if r.score else 0) %}★{% endfor %}
+                                </div>
+                                <div class="ps-date">
+                                    {{ r.at.strftime("%B %d, %Y") if r.at and r.at.strftime is defined else r.at }}
+                                </div>
+                            </div>
+
+                            <div class="ps-comment">
+                                {{ r.content }}
+                            </div>
+
+                            <div class="ps-helpful-row">
+                                <span class="ps-helpful-text">Did you find this helpful?</span>
+                                <div class="ps-action-btns">
+                                    <button type="button" class="ps-pill-btn">Yes</button>
+                                    <button type="button" class="ps-pill-btn">No</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+    <script>
+        document.getElementById('review-form').addEventListener('submit', function() {
+            document.getElementById('loading-text-label').innerText = "Fetching Reviews...";
+            document.getElementById('loading-overlay').style.display = 'flex';
+        });
+
+        function exportToPDF() {
+            const element = document.getElementById('export-target');
+            if(!element) return;
+
+            const opt = {
+                margin:       8,
+                filename:     `PlayStore_Reviews_${new Date().toISOString().slice(0,10)}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+                              </html>
+                              

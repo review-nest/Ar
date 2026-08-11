@@ -58,7 +58,7 @@ def extract_package_id(input_str):
     return input_str
 
 # =====================================
-# LOCAL HIERARCHICAL FOLDER STORAGE
+# LOCAL HIERARCHICAL FOLDER STORAGE (UPDATED)
 # Structure: Play Store / YYYY / MM / YYYY-MM-DD / YYYY-MM-DD_package.xlsx
 # =====================================
 def save_reviews_to_local_folder(package, search_date, reviews_data):
@@ -376,4 +376,3 @@ def health():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-            
